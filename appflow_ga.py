@@ -12,6 +12,7 @@ if logger.handlers:
         logger.removeHandler(handler)
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
+
 class PostgressDB():
     def __init__(self, username, password, port, host, database):
         self.user_name = username
@@ -45,7 +46,7 @@ def process_json_file(jsonf):
     """
     logger.info("Starting conversion JSON format to table format.")
     logger.info("Detecting {} valid JSON structures in the objects".format(str(len(jsonf))))
-    #JsonF is a list but the cols and metrics will always be the same across multiple jsons for 1 file
+    # JsonF is a list but the cols and metrics will always be the same across multiple jsons for 1 file
     cols = []
     try:
         cols = [r for r in jsonf[0]['reports'][0]['columnHeader']['dimensions']]
@@ -57,7 +58,6 @@ def process_json_file(jsonf):
     except:
         logger.warning("No metrics specified.")
 
-
     pd_result = None
 
     for list_index in range(len(jsonf)):
@@ -65,7 +65,7 @@ def process_json_file(jsonf):
         dim_result_dict = {}
 
         for row in data_rows:
-            #if there are dimensions, extract the dimension data and add values per key
+            # if there are dimensions, extract the dimension data and add values per key
             for i in range(len(cols)):
                 if cols[i] in dim_result_dict.keys():
                     data_list = dim_result_dict[cols[i]]
@@ -82,7 +82,7 @@ def process_json_file(jsonf):
                     dim_result_dict.update({metrics[i]: data_list})
                 else:
                     dim_result_dict[metrics[i]] = [row['metrics'][0]['values'][i]]
-        #Create dataframe for the first JSON object otherwise append to existing
+        # Create dataframe for the first JSON object otherwise append to existing
         if list_index == 0:
             pd_result = pd.DataFrame.from_dict(dim_result_dict)
         else:
@@ -90,17 +90,18 @@ def process_json_file(jsonf):
         logger.info("Finished conversion JSON format to table format.")
     return pd_result
 
+
 def lambda_handler(event, context):
     logger.info("Starting appflow conversion")
     bucket_name = event['Records'][0]['s3']['bucket']['name']
     object_key = urllib.parse.unquote_plus(event['Records'][0]['s3']['object']['key'])
     s3_client = boto3.client('s3')
 
-    logger.info("Processing bucket {}, filename {}".format(bucket_name,object_key))
+    logger.info("Processing bucket {}, filename {}".format(bucket_name, object_key))
 
     raw_object = s3_client.get_object(Bucket=bucket_name, Key=object_key)
     raw_data = json.loads('[' + raw_object['Body'].read().decode('utf-8').replace('}\n{', '},{') + ']')
-    #Raw data is always a list of JSON objects
+    # Raw data is always a list of JSON objects
     pd_result = process_json_file(raw_data)
 
     db = PostgressDB(username=os.getenv("DB_USERNAME"),

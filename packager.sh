@@ -7,6 +7,9 @@ nFlag=0
 zFlag=0
 
 CreateZipFile(){
+rm -rf package
+mkdir -p package
+pip install -r requirements.txt --target package/
 cd package
 zip -r9 ../${ZIP_NAME}.zip .
 cd ../
@@ -15,7 +18,7 @@ zip -g ${ZIP_NAME}.zip appflow_ga.py
 
 
 UsageMessage(){
-echo "usage : packager -p <aws profile> -r <aws_region> -n <name of the function> -z <zipname> -h <dbhost> -i <GOOGLE_SPREADSHEET_ID> -t <GOOGLE_SPREADSHEET_TAB_PAGE> -d <DB_TEMP_TABLE>"
+echo "usage : packager -p <aws profile> -r <aws_region> -n <name of the function> -z <zipname>"
 }
 
 while getopts "p:r:n:z:" option
@@ -46,7 +49,6 @@ if [ ${pFlag} -eq 0 ] || [ ${rFlag} -eq 0 ] || [ ${nFlag} -eq 0 ] || [ ${zFlag} 
 fi
 
 CreateZipFile
-
 
 
 function_name_cli=`aws lambda get-function --function-name ${FUNCTION_NAME} --profile ${AWS_PROFILE} --region=${AWS_REGION} | jq -r '.Configuration | .FunctionName'`
